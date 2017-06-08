@@ -1,0 +1,40 @@
+# Defines our Vagrant environment
+#
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  # create master node
+  config.vm.define :master do |master_config|
+      master_config.vm.box = "freebsd-salt"
+      master_config.vm.hostname = "master"
+      master_config.vm.network :public_network, bridge: "enp9s0", ip: "10.100.40.20"
+      master_config.vm.base_mac = "080027D14C66"
+      master_config.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true
+      master_config.vm.provider "virtualbox" do |vb|
+        vb.memory = "256"
+      end
+      master_config.ssh.shell = "sh"
+      master_config.vm.provision :shell, path: "master.sh"
+  end
+
+
+  # create the minions
+  (1..5).each do |i|
+    config.vm.define "minion#{i}" do |node|
+        node.vm.box = "freebsd-salt"
+        node.ssh.shell = "sh"
+        node.vm.hostname = "minion#{i}"
+	node.vm.network :public_network, bridge: "enp9s0", ip: "192.168.50.1#{i}"
+        node.vm.base_mac = "080027D14C9#{i}"
+        node.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true
+        node.ssh.shell = "sh"
+        node.vm.provision :shell, path: "minion.sh", args: "#{i}"
+        node.vm.provider "virtualbox" do |vb|
+          vb.memory = "256"
+        end
+   
+	end  
+    end
+end
